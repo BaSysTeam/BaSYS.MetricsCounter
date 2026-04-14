@@ -14,7 +14,7 @@ public static class ConsoleRenderer
             .Title("[bold blue]Process Metrics Monitor[/]")
             .AddColumn(new TableColumn("[bold]#[/]").RightAligned())
             .AddColumn(new TableColumn("[bold]Timestamp[/]"))
-            .AddColumn(new TableColumn("[bold]From Start (s)[/]").RightAligned())
+            .AddColumn(new TableColumn("[bold]From Start (ms)[/]").RightAligned())
             .AddColumn(new TableColumn("[bold]CPU (%)[/]").RightAligned())
             .AddColumn(new TableColumn("[bold]Memory (MB)[/]").RightAligned());
 
@@ -42,7 +42,7 @@ public static class ConsoleRenderer
             table.AddRow(
                 new Markup($"[dim]{rowNum}[/]"),
                 new Markup(r.Timestamp.ToString("HH:mm:ss.fff")),
-                new Markup($"{r.FromStartSeconds:F2}"),
+                new Markup($"{r.FromStartMs}"),
                 new Markup(ColorizeCpu(r.CpuPercent)),
                 new Markup($"[cyan]{r.MemoryMB:F2}[/]"));
         }

@@ -93,16 +93,16 @@ On exit, a file named `metrics_<pid>_<yyyyMMdd_HHmmss>.csv` is created in the `R
 ### Format
 
 ```csv
-timestamp,from_start_seconds,cpu_percent,memory_mb
-2026-04-14 14:30:03.456,0.00,0.00,128.32
-2026-04-14 14:30:04.458,1.00,3.25,128.45
-2026-04-14 14:30:05.460,2.01,12.50,129.01
+timestamp,from_start_ms,cpu_percent,memory_mb
+2026-04-14 14:30:03.456,0,0.00,128.32
+2026-04-14 14:30:04.458,1002,3.25,128.45
+2026-04-14 14:30:05.460,2005,12.50,129.01
 ```
 
 | Column              | Description                                      |
 |---------------------|--------------------------------------------------|
 | `timestamp`         | Wall-clock time of the sample (local time)       |
-| `from_start_seconds`| Seconds elapsed since monitoring started         |
+| `from_start_ms`     | Milliseconds elapsed since monitoring started    |
 | `cpu_percent`       | CPU usage percentage (across all cores)           |
 | `memory_mb`         | Working set memory in megabytes                  |
 

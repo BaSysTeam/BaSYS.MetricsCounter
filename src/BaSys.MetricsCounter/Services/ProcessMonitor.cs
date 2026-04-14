@@ -72,7 +72,7 @@ public sealed class ProcessMonitor : IDisposable
 
             var record = new MetricsRecord(
                 Timestamp: DateTime.Now,
-                FromStartSeconds: Math.Round(_stopwatch.Elapsed.TotalSeconds, 2),
+                FromStartMs: _stopwatch.ElapsedMilliseconds,
                 CpuPercent: Math.Round(Math.Max(cpuPercent, 0), 2),
                 MemoryMB: Math.Round(memoryMB, 2));
 

@@ -112,8 +112,8 @@ internal class Program
         if (monitor.Records.Count > 0)
         {
             var csvPath = CsvExporter.Export(monitor.Records, pid);
-            var duration = TimeSpan.FromSeconds(
-                monitor.Records[^1].FromStartSeconds);
+            var duration = TimeSpan.FromMilliseconds(
+                monitor.Records[^1].FromStartMs);
 
             ConsoleRenderer.PrintSummary(pid, monitor.Records.Count, duration, csvPath);
         }

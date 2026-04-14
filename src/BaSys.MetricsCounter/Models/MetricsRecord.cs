@@ -2,6 +2,6 @@ namespace BaSys.MetricsCounter.Models;
 
 public sealed record MetricsRecord(
     DateTime Timestamp,
-    double FromStartSeconds,
+    long FromStartMs,
     double CpuPercent,
     double MemoryMB);
