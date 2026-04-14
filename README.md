@@ -64,7 +64,7 @@ BaSys.MetricsCounter --help
 
 ### Stopping
 
-Press **Ctrl+C** to stop monitoring. The utility will gracefully shut down and export all collected samples to a CSV file in the current directory.
+Press **Ctrl+C** to stop monitoring. The utility will gracefully shut down and export all collected samples to a CSV file in the `Results/` folder.
 
 If the target process exits on its own during monitoring, the utility detects this automatically and exports the data collected up to that point.
 
@@ -88,7 +88,7 @@ CPU values are color-coded:
 
 ## CSV Output
 
-On exit, a file named `metrics_<pid>_<yyyyMMdd_HHmmss>.csv` is created in the current working directory.
+On exit, a file named `metrics_<pid>_<yyyyMMdd_HHmmss>.csv` is created in the `Results/` subdirectory of the current working directory. The folder is created automatically if it does not exist.
 
 ### Format
 

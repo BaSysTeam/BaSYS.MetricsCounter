@@ -8,10 +8,15 @@ public static class CsvExporter
 {
     private const string Header = "timestamp,from_start_seconds,cpu_percent,memory_mb";
 
+    private const string ResultsFolder = "Results";
+
     public static string Export(IReadOnlyList<MetricsRecord> records, int pid)
     {
+        var resultsDir = Path.Combine(Directory.GetCurrentDirectory(), ResultsFolder);
+        Directory.CreateDirectory(resultsDir);
+
         var fileName = $"metrics_{pid}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+        var filePath = Path.Combine(resultsDir, fileName);
 
         var sb = new StringBuilder();
         sb.AppendLine(Header);

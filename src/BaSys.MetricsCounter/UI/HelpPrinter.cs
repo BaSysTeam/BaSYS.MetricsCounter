@@ -38,8 +38,8 @@ public static class HelpPrinter
         AnsiConsole.Write(new Rule("[bold]Output[/]").RuleStyle("dim"));
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("  Press [bold]Ctrl+C[/] to stop monitoring.");
-        AnsiConsole.MarkupLine("  A CSV file ([cyan]metrics_<pid>_<timestamp>.csv[/]) is saved");
-        AnsiConsole.MarkupLine("  in the current directory when monitoring stops.");
+        AnsiConsole.MarkupLine("  A CSV file ([cyan]Results/metrics_<pid>_<timestamp>.csv[/]) is saved");
+        AnsiConsole.MarkupLine("  in the [cyan]Results/[/] folder when monitoring stops.");
         AnsiConsole.WriteLine();
     }
 }
