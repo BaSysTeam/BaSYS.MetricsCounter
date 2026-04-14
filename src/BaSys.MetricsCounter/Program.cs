@@ -16,7 +16,8 @@ internal class Program
             return 0;
         }
 
-        if (!TryParseArgs(args, out int pid, out double interval, out string? error))
+        if (!TryParseArgs(args, out int pid, out double interval,
+                out string? dbType, out string? dbConnection, out string? error))
         {
             ConsoleRenderer.PrintError(error!);
             AnsiConsole.MarkupLine("[dim]Use [bold]--help[/] for usage information.[/]");
@@ -62,73 +63,115 @@ internal class Program
             return 1;
         }
 
-        ConsoleRenderer.PrintHeader(pid, interval, processName);
+        IDbConnectionSampler? dbSampler = null;
+        bool hasDb = dbType is not null;
 
-        var table = ConsoleRenderer.CreateTable();
-        int intervalMs = (int)(interval * 1000);
-        bool processExited = false;
+        if (hasDb)
+        {
+            try
+            {
+                dbSampler = dbType!.ToLowerInvariant() switch
+                {
+                    "pgsql" => new PgSqlConnectionSampler(dbConnection!),
+                    "mssql" => new MsSqlConnectionSampler(dbConnection!),
+                    _ => throw new ArgumentException($"Unknown db type: {dbType}")
+                };
+                dbSampler.Connect();
+            }
+            catch (Exception ex)
+            {
+                ConsoleRenderer.PrintError(
+                    $"Failed to connect to database: {ex.Message}");
+                dbSampler?.Dispose();
+                return 1;
+            }
+        }
 
         try
         {
-            await AnsiConsole.Live(table)
-                .AutoClear(false)
-                .Overflow(VerticalOverflow.Ellipsis)
-                .StartAsync(async ctx =>
-                {
-                    while (!cts.Token.IsCancellationRequested)
+            ConsoleRenderer.PrintHeader(pid, interval, processName,
+                hasDb ? dbType : null, dbSampler?.DatabaseName);
+
+            var table = ConsoleRenderer.CreateTable(hasDb);
+            int intervalMs = (int)(interval * 1000);
+            bool processExited = false;
+
+            try
+            {
+                await AnsiConsole.Live(table)
+                    .AutoClear(false)
+                    .Overflow(VerticalOverflow.Ellipsis)
+                    .StartAsync(async ctx =>
                     {
-                        var record = monitor.Sample();
-
-                        if (record is null)
+                        while (!cts.Token.IsCancellationRequested)
                         {
-                            processExited = true;
-                            break;
+                            var record = monitor.Sample();
+
+                            if (record is null)
+                            {
+                                processExited = true;
+                                break;
+                            }
+
+                            if (dbSampler is not null)
+                            {
+                                var dbStats = dbSampler.Sample();
+                                record = record with { DbConnections = dbStats };
+                                monitor.ReplaceLastRecord(record);
+                            }
+
+                            ConsoleRenderer.UpdateTable(table, monitor.Records, hasDb);
+                            ctx.Refresh();
+
+                            try
+                            {
+                                await Task.Delay(intervalMs, cts.Token);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
                         }
+                    });
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected on Ctrl+C
+            }
 
-                        ConsoleRenderer.UpdateTable(table, monitor.Records);
-                        ctx.Refresh();
+            if (processExited)
+            {
+                ConsoleRenderer.PrintProcessExited();
+            }
 
-                        try
-                        {
-                            await Task.Delay(intervalMs, cts.Token);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            break;
-                        }
-                    }
-                });
+            if (monitor.Records.Count > 0)
+            {
+                var csvPath = CsvExporter.Export(monitor.Records, pid);
+                var duration = TimeSpan.FromMilliseconds(
+                    monitor.Records[^1].FromStartMs);
+
+                ConsoleRenderer.PrintSummary(pid, monitor.Records.Count, duration, csvPath);
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[yellow]No samples were collected.[/]");
+            }
+
+            return 0;
         }
-        catch (TaskCanceledException)
+        finally
         {
-            // Expected on Ctrl+C
+            dbSampler?.Dispose();
         }
-
-        if (processExited)
-        {
-            ConsoleRenderer.PrintProcessExited();
-        }
-
-        if (monitor.Records.Count > 0)
-        {
-            var csvPath = CsvExporter.Export(monitor.Records, pid);
-            var duration = TimeSpan.FromMilliseconds(
-                monitor.Records[^1].FromStartMs);
-
-            ConsoleRenderer.PrintSummary(pid, monitor.Records.Count, duration, csvPath);
-        }
-        else
-        {
-            AnsiConsole.MarkupLine("[yellow]No samples were collected.[/]");
-        }
-
-        return 0;
     }
 
-    private static bool TryParseArgs(string[] args, out int pid, out double interval, out string? error)
+    private static bool TryParseArgs(string[] args, out int pid, out double interval,
+        out string? dbType, out string? dbConnection, out string? error)
     {
         pid = 0;
         interval = 1.0;
+        dbType = null;
+        dbConnection = null;
         error = null;
         bool pidFound = false;
 
@@ -163,6 +206,29 @@ internal class Program
                     }
                     break;
 
+                case "--db-type":
+                    if (i + 1 >= args.Length)
+                    {
+                        error = "Missing value for [bold]--db-type[/].";
+                        return false;
+                    }
+                    dbType = args[++i].ToLowerInvariant();
+                    if (dbType is not "pgsql" and not "mssql")
+                    {
+                        error = $"Invalid db type: [bold]{dbType}[/]. Must be [cyan]pgsql[/] or [cyan]mssql[/].";
+                        return false;
+                    }
+                    break;
+
+                case "--db-connection":
+                    if (i + 1 >= args.Length)
+                    {
+                        error = "Missing value for [bold]--db-connection[/].";
+                        return false;
+                    }
+                    dbConnection = args[++i];
+                    break;
+
                 case "--help":
                 case "-h":
                     break;
@@ -176,6 +242,18 @@ internal class Program
         if (!pidFound)
         {
             error = "Missing required argument [bold]--pid[/].";
+            return false;
+        }
+
+        if (dbType is not null && dbConnection is null)
+        {
+            error = "[bold]--db-connection[/] is required when [bold]--db-type[/] is specified.";
+            return false;
+        }
+
+        if (dbConnection is not null && dbType is null)
+        {
+            error = "[bold]--db-type[/] is required when [bold]--db-connection[/] is specified.";
             return false;
         }
 

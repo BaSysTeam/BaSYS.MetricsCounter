@@ -25,6 +25,12 @@ public sealed class ProcessMonitor : IDisposable
 
     public IReadOnlyList<MetricsRecord> Records => _records;
 
+    public void ReplaceLastRecord(MetricsRecord record)
+    {
+        if (_records.Count > 0)
+            _records[^1] = record;
+    }
+
     public int Pid => _pid;
 
     public DateTime StartTime => _startTime;

@@ -5,12 +5,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PublishAot>true</PublishAot>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishAot>false</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.55.0" />
+    <PackageReference Include="Npgsql" Version="8.0.9" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.3" />
   </ItemGroup>
 
 </Project>
