@@ -6,7 +6,7 @@ namespace BaSys.MetricsCounter.Services;
 
 public static class CsvExporter
 {
-    private const string BaseHeader = "timestamp,from_start_ms,cpu_percent,memory_mb";
+    private const string BaseHeader = "timestamp,from_start_ms,cpu_percent,cpu_percent_total,memory_mb";
     private const string DbHeader = ",db_total,db_active,db_idle,db_idle_in_tx";
 
     private const string ResultsFolder = "Results";
@@ -30,6 +30,7 @@ public static class CsvExporter
                 r.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture),
                 r.FromStartMs,
                 r.CpuPercent.ToString("F2", CultureInfo.InvariantCulture),
+                r.CpuPercentTotal.ToString("F2", CultureInfo.InvariantCulture),
                 r.MemoryMB.ToString("F2", CultureInfo.InvariantCulture)));
 
             if (hasDb)

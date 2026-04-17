@@ -17,6 +17,7 @@ public static class ConsoleRenderer
             .AddColumn(new TableColumn("[bold]Timestamp[/]"))
             .AddColumn(new TableColumn("[bold]From Start (ms)[/]").RightAligned())
             .AddColumn(new TableColumn("[bold]CPU (%)[/]").RightAligned())
+            .AddColumn(new TableColumn("[bold]CPU Total (%)[/]").RightAligned())
             .AddColumn(new TableColumn("[bold]Memory (MB)[/]").RightAligned());
 
         if (hasDb)
@@ -55,6 +56,7 @@ public static class ConsoleRenderer
                 new Markup(r.Timestamp.ToString("HH:mm:ss.fff")),
                 new Markup($"{r.FromStartMs}"),
                 new Markup(ColorizeCpu(r.CpuPercent)),
+                new Markup(ColorizeCpu(r.CpuPercentTotal)),
                 new Markup($"[cyan]{r.MemoryMB:F2}[/]")
             };
 

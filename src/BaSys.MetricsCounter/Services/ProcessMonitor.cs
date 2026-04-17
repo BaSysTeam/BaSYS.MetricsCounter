@@ -14,6 +14,7 @@ public sealed class ProcessMonitor : IDisposable
     private Process? _process;
     private TimeSpan _previousCpuTime;
     private DateTime _previousSampleTime;
+    private PerformanceCounter? _cpuTotalCounter;
 
     public ProcessMonitor(int pid, double intervalSeconds)
     {
@@ -44,6 +45,9 @@ public sealed class ProcessMonitor : IDisposable
         _process.Refresh();
         _previousCpuTime = _process.TotalProcessorTime;
         _previousSampleTime = DateTime.UtcNow;
+
+        if (OperatingSystem.IsWindows())
+            InitCpuTotalCounter();
     }
 
     /// <summary>
@@ -76,10 +80,15 @@ public sealed class ProcessMonitor : IDisposable
 
             double memoryMB = _process.WorkingSet64 / (1024.0 * 1024.0);
 
+            double cpuPercentTotal = OperatingSystem.IsWindows()
+                ? ReadCpuTotalCounter()
+                : 0;
+
             var record = new MetricsRecord(
                 Timestamp: DateTime.Now,
                 FromStartMs: _stopwatch.ElapsedMilliseconds,
                 CpuPercent: Math.Round(Math.Max(cpuPercent, 0), 2),
+                CpuPercentTotal: cpuPercentTotal,
                 MemoryMB: Math.Round(memoryMB, 2));
 
             _records.Add(record);
@@ -91,8 +100,20 @@ public sealed class ProcessMonitor : IDisposable
         }
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private void InitCpuTotalCounter()
+    {
+        _cpuTotalCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", readOnly: true);
+        _cpuTotalCounter.NextValue(); // первое чтение всегда возвращает 0, прогреваем счётчик
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private double ReadCpuTotalCounter() =>
+        _cpuTotalCounter is not null ? Math.Round((double)_cpuTotalCounter.NextValue(), 2) : 0;
+
     public void Dispose()
     {
+        _cpuTotalCounter?.Dispose();
         _process?.Dispose();
     }
 }
